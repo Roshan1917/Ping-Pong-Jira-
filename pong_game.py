@@ -200,6 +200,12 @@ class PongGame:
         for i, instruction in enumerate(instructions):
             text = self.small_font.render(instruction, True, WHITE)
             self.screen.blit(text, (10, WINDOW_HEIGHT - 150 + i * 25))
+        
+        # Draw copyright notice in bottom-right corner
+        copyright_text = self.small_font.render("© Ronaldo", True, WHITE)
+        copyright_rect = copyright_text.get_rect()
+        copyright_rect.bottomright = (WINDOW_WIDTH - 10, WINDOW_HEIGHT - 10)
+        self.screen.blit(copyright_text, copyright_rect)
             
         pygame.display.flip()
         

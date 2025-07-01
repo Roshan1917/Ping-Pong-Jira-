@@ -193,6 +193,10 @@ Perfect for:
 - **Computer science courses** as a practical project
 - **Portfolio projects** demonstrating programming skills
 
+## 👨‍💻 Author
+
+**Ronaldo** - *Game Developer*
+
 ## 🏆 Acknowledgments
 
 - Inspired by the classic Pong arcade game (1972)
