@@ -57,8 +57,15 @@ class Ball:
         self.rect = pygame.Rect(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2, BALL_SIZE, BALL_SIZE)
         self.speed_x = BALL_SPEED_X * random.choice([-1, 1])
         self.speed_y = BALL_SPEED_Y * random.choice([-1, 1])
+        self.trail = []  # Store previous positions
+        self.trail_length = 10  # Number of trail segments
         
     def move(self):
+        # Store current position in trail
+        self.trail.append(self.rect.copy())
+        if len(self.trail) > self.trail_length:
+            self.trail.pop(0)
+            
         self.rect.x += self.speed_x
         self.rect.y += self.speed_y
         
@@ -70,8 +77,17 @@ class Ball:
         self.rect.center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
         self.speed_x = BALL_SPEED_X * random.choice([-1, 1])
         self.speed_y = BALL_SPEED_Y * random.choice([-1, 1])
+        self.trail.clear()  # Clear the trail on reset
         
     def draw(self, screen):
+        # Draw trail
+        for i, trail_pos in enumerate(self.trail):
+            alpha = int(255 * (i + 1) / (self.trail_length + 1))  # Fade out effect
+            trail_surface = pygame.Surface((BALL_SIZE, BALL_SIZE), pygame.SRCALPHA)
+            pygame.draw.ellipse(trail_surface, (*WHITE, alpha), trail_surface.get_rect())
+            screen.blit(trail_surface, trail_pos)
+        
+        # Draw current ball
         pygame.draw.ellipse(screen, WHITE, self.rect)
 
 class PongGame:
@@ -162,7 +178,15 @@ class PongGame:
             self.ball.speed_y = BALL_SPEED_Y * random.choice([-1, 1])
             
     def draw(self):
-        self.screen.fill(BLACK)
+        # Create blue gradient background
+        for y in range(WINDOW_HEIGHT):
+            # Calculate gradient colors
+            progress = y / WINDOW_HEIGHT
+            r = int(30 * (1 - progress))  # Dark to darker blue
+            g = int(144 * (1 - progress))  # Medium to dark blue
+            b = int(255 * (1 - progress))  # Light to medium blue
+            color = (r, g, b)
+            pygame.draw.line(self.screen, color, (0, y), (WINDOW_WIDTH, y))
         
         # Draw center line
         pygame.draw.aaline(self.screen, WHITE, (WINDOW_WIDTH // 2, 0), (WINDOW_WIDTH // 2, WINDOW_HEIGHT))
