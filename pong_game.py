@@ -12,14 +12,18 @@ WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-GREEN = (0, 255, 0)
-RED = (255, 0, 0)
+BLUE = (0, 100, 255)
+LIGHT_BLUE = (100, 200, 255)
 PADDLE_WIDTH = 15
 PADDLE_HEIGHT = 90
-BALL_SIZE = 20
+BALL_SIZE = 15
 PADDLE_SPEED = 5
 BALL_SPEED_X = 5
 BALL_SPEED_Y = 5
+
+# Trail effect constants
+TRAIL_LENGTH = 10
+TRAIL_FADE_SPEED = 25
 
 class GameStats:
     def __init__(self):
@@ -40,6 +44,7 @@ class GameStats:
 class Paddle:
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, PADDLE_WIDTH, PADDLE_HEIGHT)
+        self.glow_size = 3
         
     def move_up(self):
         if self.rect.top > 0:
@@ -50,6 +55,15 @@ class Paddle:
             self.rect.y += PADDLE_SPEED
             
     def draw(self, screen):
+        # Draw glow effect
+        for i in range(self.glow_size, 0, -1):
+            glow_rect = self.rect.inflate(i*2, i*2)
+            alpha = int((1 - i/self.glow_size) * 155)
+            glow_surface = pygame.Surface((glow_rect.width, glow_rect.height), pygame.SRCALPHA)
+            pygame.draw.rect(glow_surface, (*WHITE, alpha), glow_surface.get_rect())
+            screen.blit(glow_surface, glow_rect)
+        
+        # Draw paddle
         pygame.draw.rect(screen, WHITE, self.rect)
 
 class Ball:
@@ -57,8 +71,14 @@ class Ball:
         self.rect = pygame.Rect(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2, BALL_SIZE, BALL_SIZE)
         self.speed_x = BALL_SPEED_X * random.choice([-1, 1])
         self.speed_y = BALL_SPEED_Y * random.choice([-1, 1])
+        self.trail = []
         
     def move(self):
+        # Add current position to trail
+        self.trail.append(pygame.Rect(self.rect.x, self.rect.y, BALL_SIZE, BALL_SIZE))
+        if len(self.trail) > TRAIL_LENGTH:
+            self.trail.pop(0)
+            
         self.rect.x += self.speed_x
         self.rect.y += self.speed_y
         
@@ -70,14 +90,23 @@ class Ball:
         self.rect.center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
         self.speed_x = BALL_SPEED_X * random.choice([-1, 1])
         self.speed_y = BALL_SPEED_Y * random.choice([-1, 1])
+        self.trail = []
         
     def draw(self, screen):
+        # Draw trail with fade effect
+        for i, trail_rect in enumerate(self.trail):
+            alpha = int((i / TRAIL_LENGTH) * 255)
+            trail_surface = pygame.Surface((BALL_SIZE, BALL_SIZE), pygame.SRCALPHA)
+            pygame.draw.ellipse(trail_surface, (*WHITE, alpha), trail_surface.get_rect())
+            screen.blit(trail_surface, trail_rect)
+            
+        # Draw the main ball
         pygame.draw.ellipse(screen, WHITE, self.rect)
 
 class PongGame:
     def __init__(self):
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-        pygame.display.set_caption("Pong Game")
+        pygame.display.set_caption("Pong")
         self.clock = pygame.time.Clock()
         
         # Game objects
@@ -87,8 +116,7 @@ class PongGame:
         
         # Game state
         self.stats = GameStats()
-        self.font = pygame.font.Font(None, 74)
-        self.small_font = pygame.font.Font(None, 36)
+        self.font = pygame.font.Font(None, 84)  # Increased font size
         
         # AI for player 2
         self.ai_enabled = True
@@ -162,44 +190,44 @@ class PongGame:
             self.ball.speed_y = BALL_SPEED_Y * random.choice([-1, 1])
             
     def draw(self):
-        self.screen.fill(BLACK)
+        # Create gradient background
+        for y in range(WINDOW_HEIGHT):
+            gradient_color = (
+                int(BLUE[0] + (LIGHT_BLUE[0] - BLUE[0]) * (y / WINDOW_HEIGHT)),
+                int(BLUE[1] + (LIGHT_BLUE[1] - BLUE[1]) * (y / WINDOW_HEIGHT)),
+                int(BLUE[2] + (LIGHT_BLUE[2] - BLUE[2]) * (y / WINDOW_HEIGHT))
+            )
+            pygame.draw.line(self.screen, gradient_color, (0, y), (WINDOW_WIDTH, y))
         
-        # Draw center line
-        pygame.draw.aaline(self.screen, WHITE, (WINDOW_WIDTH // 2, 0), (WINDOW_WIDTH // 2, WINDOW_HEIGHT))
+        # Draw center line with fade effect
+        for i in range(5):
+            alpha = int((1 - i/5) * 100)
+            line_surface = pygame.Surface((2, WINDOW_HEIGHT), pygame.SRCALPHA)
+            pygame.draw.line(line_surface, (*WHITE, alpha), (1, 0), (1, WINDOW_HEIGHT))
+            self.screen.blit(line_surface, (WINDOW_WIDTH // 2 - 1 + i, 0))
         
         # Draw game objects
         self.player1.draw(self.screen)
         self.player2.draw(self.screen)
         self.ball.draw(self.screen)
         
-        # Draw scores with flashing effect
-        player1_color = GREEN if self.score_flash["player1"] > 0 else WHITE
-        player2_color = GREEN if self.score_flash["player2"] > 0 else WHITE
+        # Draw scores with modern style
+        player1_color = (*WHITE, 255) if self.score_flash["player1"] > 0 else (*WHITE, 200)
+        player2_color = (*WHITE, 255) if self.score_flash["player2"] > 0 else (*WHITE, 200)
         
         player1_score_text = self.font.render(str(self.stats.player1_score), True, player1_color)
         player2_score_text = self.font.render(str(self.stats.player2_score), True, player2_color)
         
-        self.screen.blit(player1_score_text, (WINDOW_WIDTH // 4, 50))
-        self.screen.blit(player2_score_text, (3 * WINDOW_WIDTH // 4, 50))
+        # Center scores at top of screen
+        score_y = 50
+        self.screen.blit(player1_score_text, (WINDOW_WIDTH // 4, score_y))
+        self.screen.blit(player2_score_text, (3 * WINDOW_WIDTH // 4, score_y))
         
         # Reduce flash timers
         if self.score_flash["player1"] > 0:
             self.score_flash["player1"] -= 1
         if self.score_flash["player2"] > 0:
             self.score_flash["player2"] -= 1
-        
-        # Draw instructions
-        instructions = [
-            "Player 1: W/S keys",
-            f"Player 2: {'AI' if self.ai_enabled else 'Arrow keys'}",
-            "Press 'A' to toggle AI",
-            "Press 'ESC' to quit",
-            "SCORE when opponent misses!"
-        ]
-        
-        for i, instruction in enumerate(instructions):
-            text = self.small_font.render(instruction, True, WHITE)
-            self.screen.blit(text, (10, WINDOW_HEIGHT - 150 + i * 25))
             
         pygame.display.flip()
         
